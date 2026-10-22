@@ -1,25 +1,31 @@
 import { useState, type CSSProperties } from 'react'
-import { Moon, Pencil, Plus, Sun } from 'lucide-react'
+import { CalendarRange, Moon, Pencil, Plus, Sun } from 'lucide-react'
 import { Card, CheckRow, Empty, Segmented, Sheet, Stepper } from '../components/ui'
 import {
-  KINDS, dueSlots, freqLabel, kindOf, momentLabel, useBeautyDone, useProducts,
-  type Frequency, type Kind, type Moment, type Product, type Slot,
+  KINDS, dueSlots, freqLabel, kindOf, momentLabel, toWeekPlan, useBeautyDone, useProducts,
+  type Frequency, type Kind, type Moment, type Product, type Slot, type WeekPlan,
 } from '../lib/beauty'
-import { DAY_SHORT, MONTHS, addDays, dateKey, daysInMonth, isoWeekday, longDate, sameDay, startOfWeek, today } from '../lib/dates'
+import { DAY_LONG, DAY_SHORT, MONTHS, addDays, dateKey, daysInMonth, isoWeekday, longDate, sameDay, startOfWeek, today } from '../lib/dates'
 import { uid } from '../lib/store'
 
 type View = 'jour' | 'semaine' | 'mois'
 
-export function BeautyDay({ date, compact = false }: { date: Date; compact?: boolean }) {
-  const [products] = useProducts()
+function useBeautyToggle() {
   const [done, setDone] = useBeautyDone()
-  const key = dateKey(date)
-  const items = dueSlots(products, date)
-  const toggle = (id: string) =>
+  const toggle = (key: string, id: string) =>
     setDone((prev) => {
       const cur = prev[key] ?? []
       return { ...prev, [key]: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] }
     })
+  return [done, toggle] as const
+}
+
+export function BeautyDay({ date, compact = false }: { date: Date; compact?: boolean }) {
+  const [products] = useProducts()
+  const [done, toggleDone] = useBeautyToggle()
+  const key = dateKey(date)
+  const items = dueSlots(products, date)
+  const toggle = (id: string) => toggleDone(key, id)
   if (products.length === 0) return <Empty>Aucun produit pour l’instant. Ajoute tes produits dans l’onglet Beauté.</Empty>
   if (items.length === 0) return <Empty>Rien de prévu ce jour-là.</Empty>
   return (
@@ -69,6 +75,7 @@ export default function Beauty() {
   const [view, setView] = useState<View>('jour')
   const [date, setDate] = useState(today)
   const [editing, setEditing] = useState<Product | 'new' | null>(null)
+  const [planning, setPlanning] = useState(false)
   const now = today()
 
   const step = (dir: number) => {
@@ -114,31 +121,12 @@ export default function Beauty() {
       )}
 
       {view === 'semaine' && (
-        <Card>
-          <div className="week-list">
-            {Array.from({ length: 7 }, (_, i) => {
-              const d = addDays(weekStart, i)
-              const items = dueSlots(products, d)
-              return (
-                <button key={i} type="button" className={`week-row ${sameDay(d, now) ? 'is-today' : ''}`} onClick={() => openDay(d)}>
-                  <span className="week-day">
-                    <b>{DAY_SHORT[i]}</b>
-                    <small>{d.getDate()}</small>
-                  </span>
-                  <span className="week-items">
-                    {items.length === 0 && <span className="muted">Rien de prévu</span>}
-                    {items.map(({ product, slot }) => (
-                      <span key={product.id + slot} className="chip" style={{ '--c': kindOf(product.kind).color } as CSSProperties}>
-                        {slot === 'matin' ? <Sun size={12} /> : <Moon size={12} />}
-                        {product.name}
-                      </span>
-                    ))}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </Card>
+        <>
+          <button type="button" className="btn full-soft" onClick={() => setPlanning(true)}>
+            <CalendarRange size={16} /> Modifier le planning de la semaine
+          </button>
+          <WeekCheck weekStart={weekStart} onOpenDay={openDay} />
+        </>
       )}
 
       {view === 'mois' && (
@@ -189,7 +177,7 @@ export default function Beauty() {
               <div>
                 <div className="check-title">{p.name}</div>
                 <div className="check-sub">
-                  {kindOf(p.kind).label} · {momentLabel(p.moment)} · {freqLabel(p.freq)}
+                  {kindOf(p.kind).label} · {p.freq.type === 'weekplan' ? freqLabel(p.freq) : `${momentLabel(p.moment)} · ${freqLabel(p.freq)}`}
                 </div>
               </div>
               <button type="button" className="round" aria-label={`Modifier ${p.name}`} onClick={() => setEditing(p)}>
@@ -199,6 +187,16 @@ export default function Beauty() {
           ))}
         </ul>
       </Card>
+
+      {planning && (
+        <WeekPlanner
+          onClose={() => setPlanning(false)}
+          onAdd={() => {
+            setPlanning(false)
+            setEditing('new')
+          }}
+        />
+      )}
 
       {editing && (
         <ProductForm
@@ -218,7 +216,127 @@ export default function Beauty() {
   )
 }
 
-type FreqType = Frequency['type']
+function WeekCheck({ weekStart, onOpenDay }: { weekStart: Date; onOpenDay: (d: Date) => void }) {
+  const [products] = useProducts()
+  const [done, toggle] = useBeautyToggle()
+  const now = today()
+  return (
+    <div className="week-check">
+      {Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(weekStart, i)
+        const key = dateKey(d)
+        const items = dueSlots(products, d)
+        const n = items.filter(({ product, slot }) => (done[key] ?? []).includes(`${product.id}:${slot}`)).length
+        return (
+          <Card
+            key={key}
+            className={sameDay(d, now) ? 'is-today' : ''}
+            title={
+              <button type="button" className="day-title" onClick={() => onOpenDay(d)}>
+                {DAY_LONG[i]} {d.getDate()}
+                {sameDay(d, now) && <em>Aujourd’hui</em>}
+              </button>
+            }
+            action={items.length > 0 && <span className={`badge ${n === items.length ? 'ok' : ''}`}>{n}/{items.length}</span>}
+          >
+            {items.length === 0 && <Empty>Rien de prévu.</Empty>}
+            {(['matin', 'soir'] as Slot[]).map((slot) => {
+              const list = items.filter((x) => x.slot === slot)
+              if (list.length === 0) return null
+              return (
+                <div key={slot} className="slot">
+                  <div className="slot-head">
+                    {slot === 'matin' ? <Sun size={16} /> : <Moon size={16} />}
+                    {slot === 'matin' ? 'Matin' : 'Soir'}
+                  </div>
+                  {list.map(({ product: p }) => {
+                    const id = `${p.id}:${slot}`
+                    return (
+                      <CheckRow key={id} checked={(done[key] ?? []).includes(id)} onToggle={() => toggle(key, id)} color={kindOf(p.kind).color} title={p.name} subtitle={kindOf(p.kind).label} />
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
+function PlanGrid({ plan, onChange }: { plan: WeekPlan; onChange: (p: WeekPlan) => void }) {
+  const toggle = (day: number, slot: Slot) => {
+    const cur = plan[String(day)] ?? []
+    const next = cur.includes(slot) ? cur.filter((x) => x !== slot) : ([...cur, slot].sort() as Slot[])
+    onChange({ ...plan, [String(day)]: next })
+  }
+  return (
+    <div className="plan-grid">
+      {DAY_SHORT.map((label, i) => (
+        <div key={label} className="plan-day">
+          <span>{label}</span>
+          {(['matin', 'soir'] as Slot[]).map((slot) => {
+            const on = (plan[String(i + 1)] ?? []).includes(slot)
+            return (
+              <button
+                key={slot}
+                type="button"
+                className={on ? 'on' : ''}
+                aria-pressed={on}
+                aria-label={`${DAY_LONG[i]} ${slot}`}
+                onClick={() => toggle(i + 1, slot)}
+              >
+                {slot === 'matin' ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WeekPlanner({ onClose, onAdd }: { onClose: () => void; onAdd: () => void }) {
+  const [products, setProducts] = useProducts()
+  const setPlan = (id: string, plan: WeekPlan) =>
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, freq: { type: 'weekplan', plan } } : p)))
+  return (
+    <Sheet title="Planning de la semaine" onClose={onClose}>
+      <p className="hint top">
+        Pour chaque produit, appuie sur <Sun size={13} /> pour le matin et sur <Moon size={13} /> pour le soir, jour par jour. Le planning se répète chaque semaine.
+      </p>
+      {products.length === 0 && <Empty>Aucun produit pour l’instant.</Empty>}
+      {products.map((p) => {
+        const plan = toWeekPlan(p)
+        return (
+          <div key={p.id} className="plan-product">
+            <div className="plan-name">
+              <i className="kind-dot" style={{ background: kindOf(p.kind).color }} />
+              <b>{p.name}</b>
+              <small>{kindOf(p.kind).label}</small>
+            </div>
+            {plan ? (
+              <PlanGrid plan={plan} onChange={(next) => setPlan(p.id, next)} />
+            ) : (
+              <p className="muted">{freqLabel(p.freq)} — se règle dans « Mes produits ».</p>
+            )}
+          </div>
+        )
+      })}
+      <div className="sheet-actions">
+        <button type="button" className="btn ghost" onClick={onAdd}>
+          <Plus size={16} /> Nouveau produit
+        </button>
+        <button type="button" className="btn primary" onClick={onClose}>
+          Terminé
+        </button>
+      </div>
+    </Sheet>
+  )
+}
+
+type FreqType = Exclude<Frequency['type'], 'weekdays'>
 
 function ProductForm({ initial, onClose, onSave, onDelete }: {
   initial?: Product
@@ -229,8 +347,11 @@ function ProductForm({ initial, onClose, onSave, onDelete }: {
   const [name, setName] = useState(initial?.name ?? '')
   const [kind, setKind] = useState<Kind>(initial?.kind ?? 'creme')
   const [moment, setMoment] = useState<Moment>(initial?.moment ?? 'soir')
-  const [ftype, setFtype] = useState<FreqType>(initial?.freq.type ?? 'daily')
-  const [weekdays, setWeekdays] = useState<number[]>(initial?.freq.type === 'weekdays' ? initial.freq.days : [1, 4])
+  const initType = initial?.freq.type
+  const [ftype, setFtype] = useState<FreqType>(initType === 'weekdays' ? 'weekplan' : (initType ?? 'daily'))
+  const [plan, setPlan] = useState<WeekPlan>(() =>
+    initial?.freq.type === 'weekplan' || initial?.freq.type === 'weekdays' ? (toWeekPlan(initial) ?? {}) : {},
+  )
   const [every, setEvery] = useState(initial?.freq.type === 'interval' ? initial.freq.every : 3)
   const [start, setStart] = useState(initial?.freq.type === 'interval' ? initial.freq.start : dateKey(today()))
   const [monthdays, setMonthdays] = useState<number[]>(initial?.freq.type === 'monthdays' ? initial.freq.days : [1, 15])
@@ -240,12 +361,12 @@ function ProductForm({ initial, onClose, onSave, onDelete }: {
   const freq: Frequency =
     ftype === 'daily'
       ? { type: 'daily' }
-      : ftype === 'weekdays'
-        ? { type: 'weekdays', days: weekdays }
+      : ftype === 'weekplan'
+        ? { type: 'weekplan', plan }
         : ftype === 'interval'
           ? { type: 'interval', every: Math.max(1, every || 1), start }
           : { type: 'monthdays', days: monthdays }
-  const valid = name.trim() && (ftype !== 'weekdays' || weekdays.length) && (ftype !== 'monthdays' || monthdays.length)
+  const valid = name.trim() && (ftype !== 'weekplan' || Object.values(plan).some((x) => x.length)) && (ftype !== 'monthdays' || monthdays.length)
 
   return (
     <Sheet title={initial ? 'Modifier le produit' : 'Nouveau produit'} onClose={onClose}>
@@ -265,6 +386,7 @@ function ProductForm({ initial, onClose, onSave, onDelete }: {
         </div>
       </div>
 
+      {ftype !== 'weekplan' && (
       <div className="field">
         <span>Quand</span>
         <Segmented<Moment>
@@ -277,13 +399,14 @@ function ProductForm({ initial, onClose, onSave, onDelete }: {
           ]}
         />
       </div>
+      )}
 
       <div className="field">
         <span>Fréquence</span>
         <div className="radio-list">
           {([
             ['daily', 'Tous les jours'],
-            ['weekdays', 'Certains jours de la semaine'],
+            ['weekplan', 'Certains jours de la semaine'],
             ['interval', 'Tous les X jours'],
             ['monthdays', 'Certains jours du mois'],
           ] as [FreqType, string][]).map(([id, l]) => (
@@ -293,14 +416,18 @@ function ProductForm({ initial, onClose, onSave, onDelete }: {
             </label>
           ))}
         </div>
-        {ftype === 'weekdays' && (
-          <div className="day-picker">
-            {DAY_SHORT.map((d, i) => (
-              <button key={d} type="button" className={weekdays.includes(i + 1) ? 'on' : ''} onClick={() => setWeekdays(toggleIn(weekdays, i + 1))}>
-                {d}
-              </button>
-            ))}
-          </div>
+        {ftype === 'weekplan' && (
+          <>
+            <p className="hint">Choisis le matin et / ou le soir pour chaque jour.</p>
+            <PlanGrid
+              plan={plan}
+              onChange={(next) => {
+                setPlan(next)
+                const slots = new Set(Object.values(next).flat())
+                setMoment(slots.size === 2 ? 'matin-soir' : slots.has('matin') ? 'matin' : 'soir')
+              }}
+            />
+          </>
         )}
         {ftype === 'interval' && (
           <div className="inline-fields">

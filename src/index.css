@@ -210,3 +210,20 @@ textarea { resize: vertical; }
 .tabbar button.on { color: var(--rose); }
 .check-row.no-strike .check-title { text-decoration: none; color: var(--ink); }
 .how + .check-row { border-top: 0; }
+.btn.full-soft { width: 100%; background: var(--rose-soft); color: var(--rose); }
+.week-check { display: flex; flex-direction: column; gap: 10px; }
+.card.is-today { border-color: var(--rose); box-shadow: 0 0 0 1px var(--rose); }
+.day-title { font-size: 17px; font-weight: 650; display: inline-flex; align-items: baseline; gap: 8px; }
+.day-title em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--rose); }
+.hint.top { margin-top: 0; }
+.hint svg { vertical-align: -2px; }
+.plan-product { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.plan-product:first-of-type { border-top: 0; padding-top: 0; }
+.plan-name { display: flex; align-items: center; gap: 8px; }
+.plan-name small { color: var(--muted); font-size: 12px; }
+.plan-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.plan-day { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.plan-day > span { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+.plan-day button { height: 34px; border-radius: 9px; background: #f2ece7; color: #b7aea8; display: grid; place-items: center; }
+.plan-day button.on { background: var(--rose); color: #fff; }
+.plan-day button.on:last-child { background: var(--night); }

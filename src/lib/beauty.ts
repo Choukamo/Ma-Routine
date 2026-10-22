@@ -27,6 +27,10 @@ export type Frequency =
   | { type: 'weekdays'; days: number[] }
   | { type: 'interval'; every: number; start: string }
   | { type: 'monthdays'; days: number[] }
+  | { type: 'weekplan'; plan: WeekPlan }
+
+/** jour ISO ("1" = lundi … "7" = dimanche) -> moments prévus */
+export type WeekPlan = Record<string, Slot[]>
 
 export interface Product {
   id: string
@@ -42,6 +46,8 @@ export function isDue(p: Product, d: Date): boolean {
   switch (f.type) {
     case 'daily':
       return true
+    case 'weekplan':
+      return (f.plan[String(isoWeekday(d))] ?? []).length > 0
     case 'weekdays':
       return f.days.includes(isoWeekday(d))
     case 'interval': {
@@ -60,8 +66,31 @@ export function slotsOf(p: Product): Slot[] {
   return p.moment === 'matin-soir' ? ['matin', 'soir'] : [p.moment]
 }
 
+export function slotsOn(p: Product, d: Date): Slot[] {
+  if (p.freq.type === 'weekplan') return p.freq.plan[String(isoWeekday(d))] ?? []
+  return isDue(p, d) ? slotsOf(p) : []
+}
+
+/** Planning de la semaine équivalent, ou null si la fréquence ne suit pas la semaine. */
+export function toWeekPlan(p: Product): WeekPlan | null {
+  const f = p.freq
+  if (f.type === 'weekplan') return f.plan
+  if (f.type === 'daily') return Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map((d) => [String(d), slotsOf(p)]))
+  if (f.type === 'weekdays') return Object.fromEntries(f.days.map((d) => [String(d), slotsOf(p)]))
+  return null
+}
+
 export function freqLabel(f: Frequency): string {
   switch (f.type) {
+    case 'weekplan': {
+      const parts = (['matin', 'soir'] as Slot[]).map((slot) => {
+        const days = [1, 2, 3, 4, 5, 6, 7].filter((d) => (f.plan[String(d)] ?? []).includes(slot))
+        if (days.length === 0) return ''
+        const name = slot === 'matin' ? 'Matin' : 'Soir'
+        return `${name} : ${days.length === 7 ? 'tous les jours' : days.map((d) => DAY_SHORT[d - 1].toLowerCase()).join(', ')}`
+      }).filter(Boolean)
+      return parts.length ? parts.join(' · ') : 'Pas encore planifié'
+    }
     case 'daily':
       return 'Tous les jours'
     case 'weekdays':
@@ -93,6 +122,6 @@ export function useBeautyDone() {
 export function dueSlots(products: Product[], d: Date) {
   const res: { product: Product; slot: Slot }[] = []
   for (const slot of ['matin', 'soir'] as Slot[])
-    for (const p of products) if (isDue(p, d) && slotsOf(p).includes(slot)) res.push({ product: p, slot })
+    for (const p of products) if (slotsOn(p, d).includes(slot)) res.push({ product: p, slot })
   return res
 }
