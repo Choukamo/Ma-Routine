@@ -59,20 +59,6 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
         <h1>{greeting()}</h1>
       </header>
 
-      <Card title="Beauté" action={<More label="Planning" onClick={() => go('beaute')} />}>
-        <BeautyDay date={d} compact />
-      </Card>
-
-      <LightEvening date={d} />
-
-      <Card title="Nutrition" action={<More label="Mémo" onClick={() => go('nutrition')} />}>
-        <HabitList date={d} />
-      </Card>
-
-      <Card title="Sport" action={<More label="Programme" onClick={() => go('sport')} />}>
-        <SessionView date={d} session={sessionFor(currentPhase(sport, d), d)} compact />
-      </Card>
-
       <Card title="À faire" action={<More label="Tout voir" onClick={() => go('todo')} />}>
         {openTodos.length === 0 && <Empty>Rien d’urgent aujourd’hui.</Empty>}
         {openTodos.map((t) => (
@@ -92,6 +78,20 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
           </div>
         </Card>
       )}
+
+      <Card title="Beauté" action={<More label="Planning" onClick={() => go('beaute')} />}>
+        <BeautyDay date={d} compact />
+      </Card>
+
+      <LightEvening date={d} />
+
+      <Card title="Nutrition" action={<More label="Mémo" onClick={() => go('nutrition')} />}>
+        <HabitList date={d} />
+      </Card>
+
+      <Card title="Sport" action={<More label="Programme" onClick={() => go('sport')} />}>
+        <SessionView date={d} session={sessionFor(currentPhase(sport, d), d)} compact />
+      </Card>
 
       <div className="backup">
         <p>Tes données sont enregistrées sur ce téléphone. Pense à faire une sauvegarde de temps en temps.</p>
