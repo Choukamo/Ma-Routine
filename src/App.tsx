@@ -5,6 +5,7 @@ import Beauty from './pages/Beauty'
 import Nutrition from './pages/Nutrition'
 import Sport from './pages/Sport'
 import TodoPage from './pages/Todo'
+import { dateKey, today } from './lib/dates'
 
 export type Tab = 'jour' | 'beaute' | 'nutrition' | 'sport' | 'todo'
 
@@ -18,10 +19,22 @@ const TABS: { id: Tab; label: string; Icon: typeof Apple }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('jour')
+  const [day, setDay] = useState(() => dateKey(today()))
   useEffect(() => window.scrollTo(0, 0), [tab])
+  useEffect(() => {
+    const check = () => setDay(dateKey(today()))
+    const timer = setInterval(check, 60_000)
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+    }
+  }, [])
   return (
     <div className="app">
-      <main className="page">
+      <main className="page" key={day}>
         {tab === 'jour' && <Today go={setTab} />}
         {tab === 'beaute' && <Beauty />}
         {tab === 'nutrition' && <Nutrition />}

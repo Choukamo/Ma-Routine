@@ -5,6 +5,8 @@ export const MONTHS = [
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
 ]
 
+const MONTHS_SHORT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+
 export function dateKey(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -47,7 +49,7 @@ export function longDate(d: Date): string {
 }
 
 export function shortDate(d: Date): string {
-  return `${DAY_SHORT[isoWeekday(d) - 1]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 4).replace(/\.$/, '')}.`
+  return `${DAY_SHORT[isoWeekday(d) - 1]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
 }
 
 export function sameDay(a: Date, b: Date) {

@@ -69,7 +69,7 @@ function HabitEditor({ onDone }: { onDone: () => void }) {
         <div key={h.id} className="habit-edit-row">
           <input value={h.label} onChange={(e) => update(h.id, { label: e.target.value })} aria-label="Nom de l’objectif" />
           <label className="target">
-            <input type="number" min={1} max={20} value={h.target} onChange={(e) => update(h.id, { target: Math.max(1, Number(e.target.value) || 1) })} aria-label="Nombre par jour" />
+            <input type="number" min={1} max={20} value={h.target} onChange={(e) => update(h.id, { target: Math.min(20, Math.max(1, Number(e.target.value) || 1)) })} aria-label="Nombre par jour" />
             <small>/ jour</small>
           </label>
           <button type="button" className="round" aria-label={`Supprimer ${h.label}`} onClick={() => setHabits((p) => p.filter((x) => x.id !== h.id))}>
@@ -80,7 +80,7 @@ function HabitEditor({ onDone }: { onDone: () => void }) {
       <div className="habit-edit-row new">
         <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nouvel objectif (ex. Une tisane)" />
         <label className="target">
-          <input type="number" min={1} max={20} value={target} onChange={(e) => setTarget(Math.max(1, Number(e.target.value) || 1))} aria-label="Nombre par jour" />
+          <input type="number" min={1} max={20} value={target} onChange={(e) => setTarget(Math.min(20, Math.max(1, Number(e.target.value) || 1)))} aria-label="Nombre par jour" />
           <small>/ jour</small>
         </label>
         <button

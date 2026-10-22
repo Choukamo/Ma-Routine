@@ -1,6 +1,19 @@
-const CACHE = 'ma-routine-v1'
+const CACHE = 'ma-routine-v2'
 
-self.addEventListener('install', () => self.skipWaiting())
+// Met l'appli en cache dès la première visite pour qu'elle s'ouvre hors-ligne.
+async function precache() {
+  const c = await caches.open(CACHE)
+  const res = await fetch('/', { cache: 'no-store' })
+  const html = await res.clone().text()
+  const files = [...html.matchAll(/(?:src|href)="(\/[^"]+)"/g)].map((m) => m[1])
+  await c.put('/', res)
+  await c.addAll([...new Set(files)])
+}
+
+self.addEventListener('install', (e) => {
+  self.skipWaiting()
+  e.waitUntil(precache().catch((err) => console.warn('Mise en cache hors-ligne impossible', err)))
+})
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
@@ -18,6 +31,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(req, copy))
         return res
       })
-      .catch(() => caches.match(req).then((r) => r || caches.match('/'))),
+      .catch(() => caches.match(req, { ignoreVary: true }).then((r) => r || caches.match('/'))),
   )
 })

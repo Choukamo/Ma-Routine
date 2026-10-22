@@ -17,11 +17,36 @@ function read<T>(key: string, init: () => T): T {
   return value
 }
 
+let warned = false
+
 function write<T>(key: string, value: T) {
   cache.set(key, value)
-  localStorage.setItem(PREFIX + key, JSON.stringify(value))
+  try {
+    localStorage.setItem(PREFIX + key, JSON.stringify(value))
+    warned = false
+  } catch {
+    if (!warned) {
+      warned = true
+      alert('Attention : le téléphone refuse d’enregistrer tes données (mémoire pleine ou navigation privée). Ta dernière modification sera perdue à la fermeture de l’appli.')
+    }
+  }
   listeners.get(key)?.forEach((l) => l())
 }
+
+function refreshAll() {
+  cache.clear()
+  listeners.forEach((set) => set.forEach((l) => l()))
+}
+
+// Une autre fenêtre (appli installée + onglet Chrome) a pu modifier les données.
+window.addEventListener('storage', (e) => {
+  if (e.key === null) return refreshAll()
+  if (!e.key.startsWith(PREFIX)) return
+  const k = e.key.slice(PREFIX.length)
+  cache.delete(k)
+  listeners.get(k)?.forEach((l) => l())
+})
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refreshAll())
 
 export function useStored<T>(key: string, init: () => T) {
   const subscribe = useCallback(

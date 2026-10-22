@@ -227,3 +227,4 @@ textarea { resize: vertical; }
 .plan-day button { height: 34px; border-radius: 9px; background: #f2ece7; color: #b7aea8; display: grid; place-items: center; }
 .plan-day button.on { background: var(--rose); color: #fff; }
 .plan-day button.on:last-child { background: var(--night); }
+body { overflow-wrap: anywhere; }
