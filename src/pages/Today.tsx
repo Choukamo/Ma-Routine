@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { ArrowRight, Download, Upload } from 'lucide-react'
+import { ArrowRight, Download, Luggage, Upload } from 'lucide-react'
 import { Card, Empty } from '../components/ui'
 import { BeautyDay } from './Beauty'
 import { HabitList, LightEvening } from './Nutrition'
@@ -10,6 +10,7 @@ import { sortTodos, useMemos, useTodos } from '../lib/todo'
 import { dateKey, longDate, today } from '../lib/dates'
 import { exportAll, importAll } from '../lib/store'
 import type { Tab } from '../App'
+import { TravelSummary } from './Travel'
 
 function greeting() {
   const h = new Date().getHours()
@@ -65,6 +66,14 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
           <TodoRow key={t.id} t={t} />
         ))}
         {later > 0 && <p className="hint">+ {later} tâche{later > 1 ? 's' : ''} prévue{later > 1 ? 's' : ''} plus tard</p>}
+      </Card>
+
+      <Card
+        title={<span className="travel-card-title"><Luggage size={18} /> Voyages</span>}
+        action={<More label="Ouvrir" onClick={() => go('voyages')} />}
+      >
+        <p className="hint top">Les valises de John, Ella, Flora, Nina et Matisse.</p>
+        <TravelSummary />
       </Card>
 
       {memos.length > 0 && (
