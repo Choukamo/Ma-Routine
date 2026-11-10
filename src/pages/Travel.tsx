@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, Luggage, Pencil, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
 import { Card, Empty } from '../components/ui'
-import { checkKey, TRAVEL_CATEGORIES, TRAVEL_PEOPLE, useTravelChecks, useTravelLists, type TravelCategory, type TravelItem, type TravelPerson } from '../lib/travel'
+import { checkKey, sharedCheckKey, TRAVEL_CATEGORIES, TRAVEL_PEOPLE, TRAVEL_SHARED_CATEGORY, useTravelChecks, useTravelLists, useTravelSharedItems, type TravelCategory, type TravelItem, type TravelPerson } from '../lib/travel'
 
 function Category({
   person,
@@ -128,10 +128,89 @@ function Person({ person, lists, checks, toggle, addItem, renameItem, removeItem
   )
 }
 
+function FamilyChecklist({
+  items,
+  checks,
+  toggle,
+  addItem,
+  renameItem,
+  removeItem,
+}: {
+  items: TravelItem[]
+  checks: Record<string, boolean>
+  toggle: (key: string) => void
+  addItem: (label: string) => void
+  renameItem: (itemId: string, label: string) => void
+  removeItem: (itemId: string) => void
+}) {
+  const [adding, setAdding] = useState(false)
+  const [newLabel, setNewLabel] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingLabel, setEditingLabel] = useState('')
+  const checked = items.filter((item) => checks[sharedCheckKey(item.id)]).length
+  const submitNew = () => {
+    if (!newLabel.trim()) return
+    addItem(newLabel)
+    setNewLabel('')
+    setAdding(false)
+  }
+
+  return (
+    <Card className="travel-family">
+      <div className="travel-person-head">
+        <div>
+          <h2>{TRAVEL_SHARED_CATEGORY}</h2>
+          <p>Une seule case pour les affaires partagées par toute la famille.</p>
+        </div>
+        <span className={checked === items.length ? 'badge ok' : 'badge'}>{checked}/{items.length}</span>
+      </div>
+      <div className="travel-family-items">
+        {items.map((item) => {
+          const key = sharedCheckKey(item.id)
+          const isChecked = Boolean(checks[key])
+          const editing = editingId === item.id
+          return (
+            <div key={item.id} className={editing ? 'travel-item editing' : isChecked ? 'travel-item is-done' : 'travel-item'}>
+              {editing ? (
+                <>
+                  <input className="travel-edit-input" value={editingLabel} aria-label={`Modifier ${item.label}`} onChange={(event) => setEditingLabel(event.target.value)} autoFocus />
+                  <button type="button" className="round ghost" aria-label="Enregistrer la modification" onClick={() => editingLabel.trim() && (renameItem(item.id, editingLabel), setEditingId(null))}><Save size={15} /></button>
+                  <button type="button" className="round ghost" aria-label="Annuler la modification" onClick={() => setEditingId(null)}><X size={15} /></button>
+                </>
+              ) : (
+                <>
+                  <label className="travel-item-main">
+                    <input type="checkbox" checked={isChecked} onChange={() => toggle(key)} />
+                    <span className="travel-check">{isChecked && <Check size={14} strokeWidth={3} />}</span>
+                    <span>{item.label}</span>
+                  </label>
+                  <button type="button" className="round ghost" aria-label={`Modifier ${item.label}`} onClick={() => (setEditingId(item.id), setEditingLabel(item.label))}><Pencil size={14} /></button>
+                  <button type="button" className="round ghost danger-icon" aria-label={`Supprimer ${item.label}`} onClick={() => removeItem(item.id)}><Trash2 size={14} /></button>
+                </>
+              )}
+            </div>
+          )
+        })}
+        {adding ? (
+          <div className="travel-add-row">
+            <input value={newLabel} onChange={(event) => setNewLabel(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitNew()} placeholder="Ex. Jeux de société" aria-label="Nouvel élément famille" autoFocus />
+            <button type="button" className="round primary" aria-label="Ajouter l’élément famille" onClick={submitNew} disabled={!newLabel.trim()}><Save size={15} /></button>
+            <button type="button" className="round ghost" aria-label="Annuler l’ajout" onClick={() => (setAdding(false), setNewLabel(''))}><X size={15} /></button>
+          </div>
+        ) : (
+          <button type="button" className="travel-add-button" onClick={() => setAdding(true)}><Plus size={15} /> Ajouter un élément famille</button>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 export default function Travel() {
   const { checks, toggle, reset, checked } = useTravelChecks()
   const { lists, addItem, renameItem, removeItem, total } = useTravelLists()
-  const allDone = checked === total
+  const { items: familyItems, addItem: addFamilyItem, renameItem: renameFamilyItem, removeItem: removeFamilyItem, total: familyTotal } = useTravelSharedItems()
+  const fullTotal = total + familyTotal
+  const allDone = checked === fullTotal
 
   return (
     <>
@@ -147,17 +226,19 @@ export default function Travel() {
         <div className="travel-progress-head">
           <div>
             <b>{allDone ? 'Tout est prêt !' : 'Préparation du voyage'}</b>
-            <p>{checked}/{total} éléments cochés</p>
+            <p>{checked}/{fullTotal} éléments cochés</p>
           </div>
-          <strong>{Math.round((checked / total) * 100)}%</strong>
+          <strong>{Math.round((checked / fullTotal) * 100)}%</strong>
         </div>
-        <div className="progress"><span style={{ width: `${(checked / total) * 100}%` }} /></div>
+        <div className="progress"><span style={{ width: `${(checked / fullTotal) * 100}%` }} /></div>
         {checked > 0 && (
           <button type="button" className="btn small ghost travel-reset" onClick={() => confirm('Réinitialiser toutes les cases du voyage ?') && reset()}>
             <RotateCcw size={14} /> Recommencer
           </button>
         )}
       </Card>
+
+      <FamilyChecklist items={familyItems} checks={checks} toggle={toggle} addItem={addFamilyItem} renameItem={renameFamilyItem} removeItem={removeFamilyItem} />
 
       {TRAVEL_PEOPLE.map((person) => (
         <Person key={person} person={person} lists={lists[person]} checks={checks} toggle={toggle} addItem={addItem} renameItem={renameItem} removeItem={removeItem} />
@@ -171,6 +252,8 @@ export default function Travel() {
 export function TravelSummary() {
   const { checked } = useTravelChecks()
   const { total } = useTravelLists()
-  if (total === 0) return <Empty>La checklist est vide.</Empty>
-  return <p className="travel-summary">{checked}/{total} éléments cochés · {Math.round((checked / total) * 100)}% prêt</p>
+  const { total: familyTotal } = useTravelSharedItems()
+  const fullTotal = total + familyTotal
+  if (fullTotal === 0) return <Empty>La checklist est vide.</Empty>
+  return <p className="travel-summary">{checked}/{fullTotal} éléments cochés · {Math.round((checked / fullTotal) * 100)}% prêt</p>
 }

@@ -217,6 +217,8 @@ textarea { resize: vertical; }
 .travel-progress-head strong { color: var(--sage); font-size: 24px; }
 .travel-reset { align-self: flex-start; margin: -2px 0 -4px; }
 .travel-person { padding: 0 16px; overflow: hidden; }
+.travel-family { padding: 0 16px; overflow: hidden; border-color: #d8c79b; }
+.travel-family-items { border-top: 1px solid var(--line); padding: 8px 0 10px; }
 .travel-person-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 10px; }
 .travel-person-head h2 { font-size: 20px; }
 .travel-person-head p { color: var(--muted); font-size: 13px; margin-top: 3px; }

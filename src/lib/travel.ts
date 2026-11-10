@@ -9,6 +9,8 @@ export const TRAVEL_CATEGORIES = ['Vêtements', 'Chaussures', 'Hygiène', 'Diver
 
 export type TravelCategory = (typeof TRAVEL_CATEGORIES)[number]
 
+export const TRAVEL_SHARED_CATEGORY = 'Famille' as const
+
 export type TravelItem = {
   id: string
   label: string
@@ -32,12 +34,10 @@ export const TRAVEL_ITEMS: Record<TravelCategory, TravelItem[]> = {
   ],
   Hygiène: [
     { id: 'toothbrush', label: 'Brosse à dents' },
-    { id: 'toothpaste', label: 'Dentifrice' },
     { id: 'shower', label: 'Gel douche / savon' },
     { id: 'shampoo', label: 'Shampoing' },
     { id: 'brush', label: 'Brosse / peigne' },
     { id: 'deodorant', label: 'Déodorant' },
-    { id: 'sunscreen', label: 'Crème solaire' },
     { id: 'medication', label: 'Médicaments habituels' },
   ],
   Divers: [
@@ -51,6 +51,15 @@ export const TRAVEL_ITEMS: Record<TravelCategory, TravelItem[]> = {
   ],
   'Pense-bête': [],
 }
+
+export const TRAVEL_SHARED_ITEMS: TravelItem[] = [
+  { id: 'family-toothpaste', label: 'Dentifrice' },
+  { id: 'family-sunscreen', label: 'Crème solaire' },
+  { id: 'family-shower', label: 'Gel douche familial' },
+  { id: 'family-shampoo', label: 'Shampoing familial' },
+  { id: 'family-first-aid', label: 'Trousse de premiers soins' },
+  { id: 'family-tissues', label: 'Mouchoirs' },
+]
 
 export type TravelChecks = Record<string, boolean>
 export type TravelLists = Record<TravelPerson, Record<TravelCategory, TravelItem[]>>
@@ -68,6 +77,10 @@ export function checkKey(person: TravelPerson, category: TravelCategory, itemId:
   return `${person}::${category}::${itemId}`
 }
 
+export function sharedCheckKey(itemId: string) {
+  return `${TRAVEL_SHARED_CATEGORY}::${itemId}`
+}
+
 export function useTravelChecks() {
   const [checks, setChecks] = useStored<TravelChecks>('travel-checks', () => ({}))
   const toggle = (key: string) => setChecks((current) => ({ ...current, [key]: !current[key] }))
@@ -75,6 +88,7 @@ export function useTravelChecks() {
 
   useEffect(() => {
     const migrated = Object.entries(checks).reduce<TravelChecks>((next, [key, value]) => {
+      if (key.endsWith('::Hygiène::toothpaste') || key.endsWith('::Hygiène::sunscreen')) return next
       next[key.replace('Matisse::', 'Matis::')] = value
       return next
     }, {})
@@ -89,6 +103,7 @@ export function useTravelChecks() {
 
 export function useTravelLists() {
   const [lists, setLists] = useStored<TravelLists>('travel-items', defaultLists)
+  const [migratedSharedItems, setMigratedSharedItems] = useStored('travel-family-items-migrated', () => false)
   const normalizedLists = useMemo(() => {
     const defaults = defaultLists()
     return Object.fromEntries(
@@ -100,6 +115,22 @@ export function useTravelLists() {
       ]),
     ) as TravelLists
   }, [lists])
+
+  useEffect(() => {
+    if (migratedSharedItems) return
+    setLists((current) =>
+      Object.fromEntries(
+        TRAVEL_PEOPLE.map((person) => [
+          person,
+          {
+            ...current[person],
+            Hygiène: (current[person]?.Hygiène ?? TRAVEL_ITEMS.Hygiène).filter((item) => item.id !== 'toothpaste' && item.id !== 'sunscreen'),
+          },
+        ]),
+      ) as TravelLists,
+    )
+    setMigratedSharedItems(true)
+  }, [migratedSharedItems, setLists, setMigratedSharedItems])
 
   const addItem = (person: TravelPerson, category: TravelCategory, label: string) => {
     setLists((current) => ({
@@ -140,4 +171,12 @@ export function useTravelLists() {
     [normalizedLists],
   )
   return { lists: normalizedLists, addItem, renameItem, removeItem, total }
+}
+
+export function useTravelSharedItems() {
+  const [items, setItems] = useStored<TravelItem[]>('travel-family-items', () => TRAVEL_SHARED_ITEMS.map((item) => ({ ...item })))
+  const addItem = (label: string) => setItems((current) => [...current, { id: uid(), label: label.trim() }])
+  const renameItem = (itemId: string, label: string) => setItems((current) => current.map((item) => (item.id === itemId ? { ...item, label: label.trim() } : item)))
+  const removeItem = (itemId: string) => setItems((current) => current.filter((item) => item.id !== itemId))
+  return { items, addItem, renameItem, removeItem, total: items.length }
 }
