@@ -231,6 +231,14 @@ textarea { resize: vertical; }
 .travel-chevron.open { transform: rotate(180deg); }
 .travel-items { padding: 0 0 8px; }
 .travel-item { display: flex; align-items: center; gap: 10px; min-height: 40px; color: var(--ink); font-size: 14px; cursor: pointer; }
+.travel-item-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; cursor: pointer; }
+.travel-item > .round { width: 30px; height: 30px; }
+.travel-item.editing { gap: 5px; }
+.travel-edit-input { flex: 1; min-width: 0; padding: 8px 10px !important; font-size: 14px !important; }
+.travel-add-row { display: flex; align-items: center; gap: 5px; padding: 7px 0 2px; }
+.travel-add-row input { flex: 1; min-width: 0; padding: 8px 10px !important; font-size: 14px !important; }
+.travel-add-button { display: inline-flex; align-items: center; gap: 5px; color: var(--rose); font-size: 13px; font-weight: 650; padding: 8px 0 4px; }
+.danger-icon { color: #b4473f !important; }
 .travel-item input { position: absolute; opacity: 0; pointer-events: none; }
 .travel-check { width: 23px; height: 23px; flex: none; display: grid; place-items: center; border: 2px solid var(--sage); border-radius: 7px; color: #fff; }
 .travel-item.is-done .travel-check { background: var(--sage); }

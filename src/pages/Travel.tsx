@@ -1,22 +1,39 @@
 import { useState } from 'react'
-import { Check, ChevronDown, Luggage, RotateCcw } from 'lucide-react'
+import { Check, ChevronDown, Luggage, Pencil, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
 import { Card, Empty } from '../components/ui'
-import { checkKey, TRAVEL_CATEGORIES, TRAVEL_ITEMS, TRAVEL_PEOPLE, useTravelChecks, type TravelCategory, type TravelPerson } from '../lib/travel'
+import { checkKey, TRAVEL_CATEGORIES, TRAVEL_PEOPLE, useTravelChecks, useTravelLists, type TravelCategory, type TravelItem, type TravelPerson } from '../lib/travel'
 
 function Category({
   person,
   category,
+  items,
   checks,
   toggle,
+  addItem,
+  renameItem,
+  removeItem,
 }: {
   person: TravelPerson
   category: TravelCategory
+  items: TravelItem[]
   checks: Record<string, boolean>
   toggle: (key: string) => void
+  addItem: (person: TravelPerson, category: TravelCategory, label: string) => void
+  renameItem: (person: TravelPerson, category: TravelCategory, itemId: string, label: string) => void
+  removeItem: (person: TravelPerson, category: TravelCategory, itemId: string) => void
 }) {
   const [open, setOpen] = useState(true)
-  const items = TRAVEL_ITEMS[category]
+  const [adding, setAdding] = useState(false)
+  const [newLabel, setNewLabel] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingLabel, setEditingLabel] = useState('')
   const done = items.filter((item) => checks[checkKey(person, category, item.id)]).length
+  const submitNew = () => {
+    if (!newLabel.trim()) return
+    addItem(person, category, newLabel)
+    setNewLabel('')
+    setAdding(false)
+  }
 
   return (
     <div className="travel-category">
@@ -29,27 +46,67 @@ function Category({
       </button>
       {open && (
         <div className="travel-items">
+          {items.length === 0 && <Empty>Aucun élément personnalisé.</Empty>}
           {items.map((item) => {
             const key = checkKey(person, category, item.id)
             const checked = Boolean(checks[key])
+            const editing = editingId === item.id
             return (
-              <label key={item.id} className={checked ? 'travel-item is-done' : 'travel-item'}>
-                <input type="checkbox" checked={checked} onChange={() => toggle(key)} />
-                <span className="travel-check">{checked && <Check size={14} strokeWidth={3} />}</span>
-                <span>{item.label}</span>
-              </label>
+              <div key={item.id} className={editing ? 'travel-item editing' : checked ? 'travel-item is-done' : 'travel-item'}>
+                {editing ? (
+                  <>
+                    <input
+                      className="travel-edit-input"
+                      value={editingLabel}
+                      aria-label={`Modifier ${item.label}`}
+                      onChange={(event) => setEditingLabel(event.target.value)}
+                      onKeyDown={(event) => event.key === 'Enter' && editingLabel.trim() && (renameItem(person, category, item.id, editingLabel), setEditingId(null))}
+                      autoFocus
+                    />
+                    <button type="button" className="round ghost" aria-label="Enregistrer la modification" onClick={() => editingLabel.trim() && (renameItem(person, category, item.id, editingLabel), setEditingId(null))}>
+                      <Save size={15} />
+                    </button>
+                    <button type="button" className="round ghost" aria-label="Annuler la modification" onClick={() => setEditingId(null)}>
+                      <X size={15} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <label className="travel-item-main">
+                      <input type="checkbox" checked={checked} onChange={() => toggle(key)} />
+                      <span className="travel-check">{checked && <Check size={14} strokeWidth={3} />}</span>
+                      <span>{item.label}</span>
+                    </label>
+                    <button type="button" className="round ghost" aria-label={`Modifier ${item.label}`} onClick={() => (setEditingId(item.id), setEditingLabel(item.label))}>
+                      <Pencil size={14} />
+                    </button>
+                    <button type="button" className="round ghost danger-icon" aria-label={`Supprimer ${item.label}`} onClick={() => removeItem(person, category, item.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             )
           })}
+          {adding ? (
+            <div className="travel-add-row">
+              <input value={newLabel} onChange={(event) => setNewLabel(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitNew()} placeholder="Ex. Carnet de santé" aria-label={`Nouvel élément ${category}`} autoFocus />
+              <button type="button" className="round primary" aria-label="Ajouter l’élément" onClick={submitNew} disabled={!newLabel.trim()}><Save size={15} /></button>
+              <button type="button" className="round ghost" aria-label="Annuler l’ajout" onClick={() => (setAdding(false), setNewLabel(''))}><X size={15} /></button>
+            </div>
+          ) : (
+            <button type="button" className="travel-add-button" onClick={() => setAdding(true)}><Plus size={15} /> Ajouter un élément</button>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function Person({ person, checks, toggle }: { person: TravelPerson; checks: Record<string, boolean>; toggle: (key: string) => void }) {
-  const personTotal = Object.values(TRAVEL_ITEMS).reduce((count, items) => count + items.length, 0)
+function Person({ person, lists, checks, toggle, addItem, renameItem, removeItem }: { person: TravelPerson; lists: Record<TravelCategory, TravelItem[]>; checks: Record<string, boolean>; toggle: (key: string) => void; addItem: (person: TravelPerson, category: TravelCategory, label: string) => void; renameItem: (person: TravelPerson, category: TravelCategory, itemId: string, label: string) => void; removeItem: (person: TravelPerson, category: TravelCategory, itemId: string) => void }) {
+  const personTotal = Object.values(lists).reduce((count, items) => count + items.length, 0)
   const personDone = TRAVEL_CATEGORIES.reduce(
-    (count, category) => count + TRAVEL_ITEMS[category].filter((item) => checks[checkKey(person, category, item.id)]).length,
+    (count, category) => count + lists[category].filter((item) => checks[checkKey(person, category, item.id)]).length,
     0,
   )
 
@@ -64,7 +121,7 @@ function Person({ person, checks, toggle }: { person: TravelPerson; checks: Reco
       </div>
       <div className="travel-categories">
         {TRAVEL_CATEGORIES.map((category) => (
-          <Category key={category} person={person} category={category} checks={checks} toggle={toggle} />
+          <Category key={category} person={person} category={category} items={lists[category]} checks={checks} toggle={toggle} addItem={addItem} renameItem={renameItem} removeItem={removeItem} />
         ))}
       </div>
     </Card>
@@ -72,7 +129,8 @@ function Person({ person, checks, toggle }: { person: TravelPerson; checks: Reco
 }
 
 export default function Travel() {
-  const { checks, toggle, reset, total, checked } = useTravelChecks()
+  const { checks, toggle, reset, checked } = useTravelChecks()
+  const { lists, addItem, renameItem, removeItem, total } = useTravelLists()
   const allDone = checked === total
 
   return (
@@ -102,7 +160,7 @@ export default function Travel() {
       </Card>
 
       {TRAVEL_PEOPLE.map((person) => (
-        <Person key={person} person={person} checks={checks} toggle={toggle} />
+        <Person key={person} person={person} lists={lists[person]} checks={checks} toggle={toggle} addItem={addItem} renameItem={renameItem} removeItem={removeItem} />
       ))}
 
       <p className="hint travel-hint">Les cases sont enregistrées automatiquement sur ce téléphone.</p>
@@ -111,7 +169,8 @@ export default function Travel() {
 }
 
 export function TravelSummary() {
-  const { checked, total } = useTravelChecks()
+  const { checked } = useTravelChecks()
+  const { total } = useTravelLists()
   if (total === 0) return <Empty>La checklist est vide.</Empty>
   return <p className="travel-summary">{checked}/{total} éléments cochés · {Math.round((checked / total) * 100)}% prêt</p>
 }
