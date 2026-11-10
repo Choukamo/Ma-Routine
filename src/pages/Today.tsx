@@ -72,7 +72,7 @@ export default function Today({ go }: { go: (t: Tab) => void }) {
         title={<span className="travel-card-title"><Luggage size={18} /> Voyages</span>}
         action={<More label="Ouvrir" onClick={() => go('voyages')} />}
       >
-        <p className="hint top">Les valises de John, Ella, Flora, Nina et Matisse.</p>
+        <p className="hint top">Les valises de John, Ella, Flora, Nina et Matis.</p>
         <TravelSummary />
       </Card>
 
