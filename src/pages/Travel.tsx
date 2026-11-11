@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronDown, Luggage, Pencil, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
 import { Card, Empty } from '../components/ui'
-import { checkKey, sharedCheckKey, TRAVEL_CATEGORIES, TRAVEL_PEOPLE, TRAVEL_SHARED_CATEGORY, useTravelChecks, useTravelLists, useTravelSharedItems, type TravelCategory, type TravelItem, type TravelPerson } from '../lib/travel'
+import { checkKey, sharedCheckKey, TRAVEL_CATEGORIES, TRAVEL_PEOPLE, TRAVEL_SHARED_CATEGORY, useTravelChecks, useTravelGeneralItems, useTravelLists, useTravelSharedItems, type TravelCategory, type TravelItem, type TravelPerson } from '../lib/travel'
 
 function Category({
   person,
@@ -128,7 +128,11 @@ function Person({ person, lists, checks, toggle, addItem, renameItem, removeItem
   )
 }
 
-function FamilyChecklist({
+function SharedChecklist({
+  title,
+  description,
+  addLabel,
+  emptyLabel,
   items,
   checks,
   toggle,
@@ -136,6 +140,10 @@ function FamilyChecklist({
   renameItem,
   removeItem,
 }: {
+  title: string
+  description: string
+  addLabel: string
+  emptyLabel: string
   items: TravelItem[]
   checks: Record<string, boolean>
   toggle: (key: string) => void
@@ -159,12 +167,13 @@ function FamilyChecklist({
     <Card className="travel-family">
       <div className="travel-person-head">
         <div>
-          <h2>{TRAVEL_SHARED_CATEGORY}</h2>
-          <p>Une seule case pour les affaires partagées par toute la famille.</p>
+          <h2>{title}</h2>
+          <p>{description}</p>
         </div>
-        <span className={checked === items.length ? 'badge ok' : 'badge'}>{checked}/{items.length}</span>
+        <span className={items.length > 0 && checked === items.length ? 'badge ok' : 'badge'}>{checked}/{items.length}</span>
       </div>
       <div className="travel-family-items">
+        {items.length === 0 && <Empty>{emptyLabel}</Empty>}
         {items.map((item) => {
           const key = sharedCheckKey(item.id)
           const isChecked = Boolean(checks[key])
@@ -198,7 +207,7 @@ function FamilyChecklist({
             <button type="button" className="round ghost" aria-label="Annuler l’ajout" onClick={() => (setAdding(false), setNewLabel(''))}><X size={15} /></button>
           </div>
         ) : (
-          <button type="button" className="travel-add-button" onClick={() => setAdding(true)}><Plus size={15} /> Ajouter un élément famille</button>
+          <button type="button" className="travel-add-button" onClick={() => setAdding(true)}><Plus size={15} /> {addLabel}</button>
         )}
       </div>
     </Card>
@@ -209,7 +218,8 @@ export default function Travel() {
   const { checks, toggle, reset, checked } = useTravelChecks()
   const { lists, addItem, renameItem, removeItem, total } = useTravelLists()
   const { items: familyItems, addItem: addFamilyItem, renameItem: renameFamilyItem, removeItem: removeFamilyItem, total: familyTotal } = useTravelSharedItems()
-  const fullTotal = total + familyTotal
+  const { items: generalItems, addItem: addGeneralItem, renameItem: renameGeneralItem, removeItem: removeGeneralItem, total: generalTotal } = useTravelGeneralItems()
+  const fullTotal = total + familyTotal + generalTotal
   const allDone = checked === fullTotal
 
   return (
@@ -238,11 +248,13 @@ export default function Travel() {
         )}
       </Card>
 
-      <FamilyChecklist items={familyItems} checks={checks} toggle={toggle} addItem={addFamilyItem} renameItem={renameFamilyItem} removeItem={removeFamilyItem} />
+      <SharedChecklist title={TRAVEL_SHARED_CATEGORY} description="Une seule case pour les affaires partagées par toute la famille." addLabel="Ajouter un élément famille" emptyLabel="Aucun élément partagé pour l’instant." items={familyItems} checks={checks} toggle={toggle} addItem={addFamilyItem} renameItem={renameFamilyItem} removeItem={removeFamilyItem} />
 
       {TRAVEL_PEOPLE.map((person) => (
         <Person key={person} person={person} lists={lists[person]} checks={checks} toggle={toggle} addItem={addItem} renameItem={renameItem} removeItem={removeItem} />
       ))}
+
+      <SharedChecklist title="Pense-bête général — Divers" description="Ta liste personnelle pour les choses à ne pas oublier." addLabel="Ajouter au pense-bête" emptyLabel="Ajoute ton premier élément : fil électrique, appareil photo, sac-poubelle…" items={generalItems} checks={checks} toggle={toggle} addItem={addGeneralItem} renameItem={renameGeneralItem} removeItem={removeGeneralItem} />
 
       <p className="hint travel-hint">Les cases sont enregistrées automatiquement sur ce téléphone.</p>
     </>
@@ -253,7 +265,8 @@ export function TravelSummary() {
   const { checked } = useTravelChecks()
   const { total } = useTravelLists()
   const { total: familyTotal } = useTravelSharedItems()
-  const fullTotal = total + familyTotal
+  const { total: generalTotal } = useTravelGeneralItems()
+  const fullTotal = total + familyTotal + generalTotal
   if (fullTotal === 0) return <Empty>La checklist est vide.</Empty>
   return <p className="travel-summary">{checked}/{fullTotal} éléments cochés · {Math.round((checked / fullTotal) * 100)}% prêt</p>
 }

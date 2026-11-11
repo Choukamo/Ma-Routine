@@ -180,3 +180,11 @@ export function useTravelSharedItems() {
   const removeItem = (itemId: string) => setItems((current) => current.filter((item) => item.id !== itemId))
   return { items, addItem, renameItem, removeItem, total: items.length }
 }
+
+export function useTravelGeneralItems() {
+  const [items, setItems] = useStored<TravelItem[]>('travel-general-items', () => [])
+  const addItem = (label: string) => setItems((current) => [...current, { id: uid(), label: label.trim() }])
+  const renameItem = (itemId: string, label: string) => setItems((current) => current.map((item) => (item.id === itemId ? { ...item, label: label.trim() } : item)))
+  const removeItem = (itemId: string) => setItems((current) => current.filter((item) => item.id !== itemId))
+  return { items, addItem, renameItem, removeItem, total: items.length }
+}
