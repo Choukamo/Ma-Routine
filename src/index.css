@@ -205,6 +205,50 @@ textarea { resize: vertical; }
 .backup { display: flex; flex-direction: column; gap: 6px; padding: 8px 2px; font-size: 13px; color: var(--muted); }
 .backup > div { display: flex; gap: 6px; }
 
+.travel-hero { display: flex; align-items: center; gap: 12px; padding: 8px 2px 2px; }
+.travel-hero .page-title { padding: 0; }
+.travel-hero p { color: var(--muted); font-size: 13px; margin-top: 2px; line-height: 1.35; }
+.travel-hero-icon { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 14px; background: var(--rose-soft); color: var(--rose); }
+.travel-progress { display: flex; flex-direction: column; gap: 10px; }
+.travel-progress.is-done { border-color: var(--sage); }
+.travel-progress-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.travel-progress-head b { font-size: 16px; }
+.travel-progress-head p { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.travel-progress-head strong { color: var(--sage); font-size: 24px; }
+.travel-reset { align-self: flex-start; margin: -2px 0 -4px; }
+.travel-person { padding: 0 16px; overflow: hidden; }
+.travel-family { padding: 0 16px; overflow: hidden; border-color: #d8c79b; }
+.travel-family-items { border-top: 1px solid var(--line); padding: 8px 0 10px; }
+.travel-person-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 10px; }
+.travel-person-head h2 { font-size: 20px; }
+.travel-person-head p { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.travel-categories { border-top: 1px solid var(--line); }
+.travel-category { border-bottom: 1px solid var(--line); }
+.travel-category:last-child { border-bottom: 0; }
+.travel-category-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 0; text-align: left; }
+.travel-category-head > span { display: flex; align-items: center; gap: 8px; }
+.travel-category-head b { font-size: 15px; }
+.travel-category-head small { color: var(--muted); font-size: 12px; }
+.travel-chevron { color: var(--muted); transition: transform .15s; }
+.travel-chevron.open { transform: rotate(180deg); }
+.travel-items { padding: 0 0 8px; }
+.travel-item { display: flex; align-items: center; gap: 10px; min-height: 40px; color: var(--ink); font-size: 14px; cursor: pointer; }
+.travel-item-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; cursor: pointer; }
+.travel-item > .round { width: 30px; height: 30px; }
+.travel-item.editing { gap: 5px; }
+.travel-edit-input { flex: 1; min-width: 0; padding: 8px 10px !important; font-size: 14px !important; }
+.travel-add-row { display: flex; align-items: center; gap: 5px; padding: 7px 0 2px; }
+.travel-add-row input { flex: 1; min-width: 0; padding: 8px 10px !important; font-size: 14px !important; }
+.travel-add-button { display: inline-flex; align-items: center; gap: 5px; color: var(--rose); font-size: 13px; font-weight: 650; padding: 8px 0 4px; }
+.danger-icon { color: #b4473f !important; }
+.travel-item input { position: absolute; opacity: 0; pointer-events: none; }
+.travel-check { width: 23px; height: 23px; flex: none; display: grid; place-items: center; border: 2px solid var(--sage); border-radius: 7px; color: #fff; }
+.travel-item.is-done .travel-check { background: var(--sage); }
+.travel-item.is-done > span:last-child { color: var(--muted); text-decoration: line-through; }
+.travel-hint { text-align: center; padding-bottom: 8px; }
+.travel-card-title { display: inline-flex; align-items: center; gap: 7px; }
+.travel-summary { color: var(--sage); font-size: 14px; font-weight: 650; margin-top: 10px; }
+
 .tabbar { position: fixed; bottom: 0; left: 0; right: 0; max-width: 560px; margin: 0 auto; display: flex; background: rgba(255, 253, 251, 0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); z-index: 10; }
 .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; font-size: 11px; font-weight: 600; color: var(--muted); }
 .tabbar button.on { color: var(--rose); }

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Apple, CalendarCheck, Dumbbell, ListChecks, Sparkles } from 'lucide-react'
+import { Apple, CalendarCheck, Dumbbell, ListChecks, Luggage, Sparkles } from 'lucide-react'
 import Today from './pages/Today'
 import Beauty from './pages/Beauty'
 import Nutrition from './pages/Nutrition'
 import Sport from './pages/Sport'
 import TodoPage from './pages/Todo'
+import Travel from './pages/Travel'
 import { dateKey, today } from './lib/dates'
 
-export type Tab = 'jour' | 'beaute' | 'nutrition' | 'sport' | 'todo'
+export type Tab = 'jour' | 'beaute' | 'nutrition' | 'sport' | 'todo' | 'voyages'
 
 const TABS: { id: Tab; label: string; Icon: typeof Apple }[] = [
   { id: 'jour', label: 'Aujourd’hui', Icon: CalendarCheck },
@@ -15,6 +16,7 @@ const TABS: { id: Tab; label: string; Icon: typeof Apple }[] = [
   { id: 'nutrition', label: 'Nutrition', Icon: Apple },
   { id: 'sport', label: 'Sport', Icon: Dumbbell },
   { id: 'todo', label: 'À faire', Icon: ListChecks },
+  { id: 'voyages', label: 'Voyages', Icon: Luggage },
 ]
 
 export default function App() {
@@ -40,6 +42,7 @@ export default function App() {
         {tab === 'nutrition' && <Nutrition />}
         {tab === 'sport' && <Sport />}
         {tab === 'todo' && <TodoPage />}
+        {tab === 'voyages' && <Travel />}
       </main>
       <nav className="tabbar">
         {TABS.map(({ id, label, Icon }) => (
